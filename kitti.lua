@@ -1,6 +1,7 @@
 ------------------------------------------------------------------------------
 -- This script loads the KITTI dataset
 -- Aysegul Dundar 
+-- e-mail : adundar@purdue.edu  
 -- Date : 04/28/2013 
 ------------------------------------------------------------------------------
 
@@ -40,7 +41,7 @@ end
 
 
 -- Extract patches
-function extractPatches(dspath, tracklet)
+function extractObjects(dspath, tracklet)
    videoframes = #sys.dirname(dspath)-2 -- #sys.dir(dspath) == total number of frames in video dump (minum . and ..)
    for imgi = 1,videoframes do
       rawFrame = image.loadPNG(tostring(dspath..string.format("%010u", imgi-1)..'.png'))
@@ -92,7 +93,6 @@ function extractPatches(dspath, tracklet)
             win:stroke()
             win:gend()
 
-          
          end
       end
    
@@ -109,7 +109,7 @@ print '==> loading KITTI tracklets and parsing the XML files'
 dspath ='../dataset/KITTI_dataset/city/2011_09_26_drive_0001/image_02/data/'--/0000000000.png' -- Right images
 tracklet_labels = xml.load("../dataset/KITTI_dataset/city/2011_09_26_drive_0001/tracklet_labels.xml")
 tracklet = parseXML(tracklet_labels)
-extractPatches(dspath, tracklet)
+extractObjects(dspath, tracklet)
 
 
 
