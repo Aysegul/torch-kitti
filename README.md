@@ -17,7 +17,7 @@ For the demo:
  > - synced+rectified data
  > - tracklet
 
-The images folder ending with 'sync' has folders with images put tracket_labels.xml in the same filder.
+The images folder ending with 'sync' has folders with images put tracklet_labels.xml in the same folder.
 Modify dspath, absolute path to sequence base directory (ends with _sync), in demo_kitti.lua.
 
 ```bash
