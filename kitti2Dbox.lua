@@ -31,16 +31,20 @@ function projectToImage(pts_3D, K)
 end
 
 
-function kitti2Dbox(tracklet)
+function kitti2Dbox(tracklet, corner)
 
+   local w=corner.w
+   local h=corner.h
+   local l=corner.l
    local corners={}
    corners.x = torch.Tensor{l/2, l/2, -l/2, -l/2, l/2, l/2, -l/2, -l/2}; 
    corners.y = torch.Tensor{w/2, -w/2, -w/2, w/2, w/2, -w/2, -w/2, w/2}; 
    corners.z = torch.Tensor{0,0,0,0,h,h,h,h};
 
-   local rz = tracklet.rz
    local t = {tracklet.tx; tracklet.ty; tracklet.tz};
-   rz = wrapToPi(rz);
+   local rz = wrapToPi(tracklet.rz)
+
+
    occlusion =0;
 
    local R = torch.Tensor{{math.cos(rz), -math.sin(rz), 0},

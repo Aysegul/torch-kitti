@@ -8,8 +8,6 @@
 -- Requires ------------------------------------------------------------------
 require 'image'   -- to visualize the dataset
 require 'sys'
-require 'nnx'
-require 'ffmpeg'
 require 'xml'
 require 'kitti2Dbox'
 require 'qtwidget'
@@ -60,10 +58,8 @@ function extractObjects(dspath, tracklet)
          first = tonumber(tracklet.item[k].first_frame)
          count = tonumber(tracklet.item[k].poses.count)+first
          if  first<imgi and imgi<=count then
-            w=tracklet.item[k].w
-            h=tracklet.item[k].h
-            l=tracklet.item[k].l
-            box = kitti2Dbox(tracklet.item[k].poses.item[imgi-first])
+
+            box = kitti2Dbox(tracklet.item[k].poses.item[imgi-first], tracklet.item[k])
             box.objectType = tracklet.item[k].objectType
 
             iwidth = rawFrame:size(3)
@@ -80,15 +76,9 @@ function extractObjects(dspath, tracklet)
             win:setfont(qt.QFont{serif=false,italic=false,size=16})
             win:moveto(box.x1, box.y1-1)
 
-            if (box.objectType == 'Car') then
-                win:show('car')
-            elseif (box.objectType == 'Tram') then
-               win:show('tram')
-            elseif (box.objectType == 'Cyclist') then
-               win:show('cyclist')
-            else
-               win:show('other')
-            end
+
+            win:show(box.objectType)
+
 
             win:stroke()
             win:gend()
@@ -106,10 +96,13 @@ end
 print '==> loading KITTI tracklets and parsing the XML files'
 
 
-dspath ='../dataset/KITTI_dataset/city/2011_09_26_drive_0001/image_02/data/'--/0000000000.png' -- Right images
-tracklet_labels = xml.load("../dataset/KITTI_dataset/city/2011_09_26_drive_0001/tracklet_labels.xml")
-tracklet = parseXML(tracklet_labels)
-extractObjects(dspath, tracklet)
+local dspath = '/Users/ayseguldundar/Work/Aysegul/2011_09_26_drive_0005_sync'
+
+local img_path = dspath .. '/image_02/data/'
+local tracklet_labels = xml.load(dspath .. '/tracklet_labels.xml')
+
+local tracklet = parseXML(tracklet_labels)
+extractObjects(img_path, tracklet)
 
 
 
