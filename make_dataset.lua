@@ -29,6 +29,7 @@ if not opt then
    print '==> processing options'
    cmd = torch.CmdLine()
    cmd:text('Opions')
+   cmd:option('-datadir',  'data',     'directory to save data')
    cmd:option('-width',       128,     'width of extracted patch')
    cmd:option('-height',      128,     'height of extracted patch')
    cmd:text()
@@ -48,8 +49,19 @@ end
 
 
 -- Extract patches
-function extractObjects(dspath, tracklet)
-   videoframes = #sys.dirname(dspath)-2
+function extractObjects(dspath, tracklet, vfile)
+   local list = paths.dir(dspath)
+
+   -- exclude hidden files and exceptions [char(46) = '.']
+   for i = #list, 1, -1 do
+      if string.byte(list[i], 1) == 46 then
+         table.remove(list, i)
+      end
+   end
+   -- print(list)
+
+   videoframes = #list
+   print('videoframes',videoframes)
    for imgi = 1,videoframes do
       rawFrame = image.loadPNG(tostring(dspath..string.format("%010u", imgi-1)..'.png'))
       local detections = {}
@@ -69,8 +81,9 @@ function extractObjects(dspath, tracklet)
             box.x2 = max(1, min(iwidth, box.x2))
             box.y2 = max(1, min(iheight, box.y2))
 
-            os.execute("mkdir -p " .. box.objectType)
-            local number = #paths.dir(box.objectType)
+            local ldir = opt.datadir ..'/'.. box.objectType
+            os.execute("mkdir -p " .. ldir)
+            local number = #paths.dir(ldir)
 
             local centerx = floor(box.x1 + (box.x2-box.x1)/2)
             local centery = floor(box.y1 + (box.y2-box.y1)/2)
@@ -85,7 +98,7 @@ function extractObjects(dspath, tracklet)
             if x >= 1 and y >= 1 and w <= iwidth and h <= iheight then
 
                 local sample = rawFrame[{ {}, {y, h}, {x, w} }]:clone()
-                image.savePNG(box.objectType..'/'..tostring(number)..'.png', sample)
+                image.saveJPG(ldir ..'/'..vfile..'-'..box.objectType..'-'..  tostring(number)..'.jpg', sample)
             end
 
          end
@@ -98,16 +111,24 @@ end
 
 -- Main program -------------------------------------------------------------
 
-print '==> loading KITTI tracklets and parsing the XML files'
+-- some files: 2011_09_26_drive_0014_sync 
+-- have problems, so have to split the dataset like this:
+-- datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
+-- datafiles = {17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
+datafiles = {57,59,60,61,64,79,84,86,87,91,93}
+local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/'
 
+for i = 1, #datafiles do
+   local vfile = '2011_09_26_drive_'.. string.format("%04d", datafiles[i]) ..'_sync'
 
-local dspath = '/Users/ayseguldundar/github/Aysegul/torch-KITTI/2011_09_26_drive_0001_sync'
+   print('==> loading KITTI tracklets and parsing the XML file: ' .. vfile)
 
-local img_path = dspath .. '/image_02/data/'
-local tracklet_labels = xml.load(dspath .. '/tracklet_labels.xml')
+   local img_path = dspath .. vfile ..  '/image_02/data/'
+   local tracklet_labels = xml.load(dspath .. vfile .. '/tracklet_labels.xml')
+   local tracklet = parseXML(tracklet_labels)
 
-local tracklet = parseXML(tracklet_labels)
-extractObjects(img_path, tracklet)
+   extractObjects(img_path, tracklet, vfile)
+end
 
 
 

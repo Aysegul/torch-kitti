@@ -96,7 +96,7 @@ end
 print '==> loading KITTI tracklets and parsing the XML files'
 
 
-local dspath = '/Users/ayseguldundar/Work/Aysegul/2011_09_26_drive_0005_sync'
+local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/2011_09_26/2011_09_26_drive_0001_sync'
 
 local img_path = dspath .. '/image_02/data/'
 local tracklet_labels = xml.load(dspath .. '/tracklet_labels.xml')
