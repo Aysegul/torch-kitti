@@ -32,6 +32,7 @@ if not opt then
    cmd:option('-datadir',  'data',     'directory to save data')
    cmd:option('-width',       128,     'width of extracted patch')
    cmd:option('-height',      128,     'height of extracted patch')
+   cmd:option('-objects',    false,     'save data for objects, otherwise backgrounds')
    cmd:text()
    opt = cmd:parse(arg or {})
 end
@@ -48,7 +49,7 @@ function parseXML(tracklet_labels)
 end
 
 
--- Extract patches
+-- Extract object patches
 function extractObjects(dspath, tracklet, vfile)
    local list = paths.dir(dspath)
 
@@ -69,17 +70,24 @@ function extractObjects(dspath, tracklet, vfile)
          first = tonumber(tracklet.item[k].first_frame)
          count = tonumber(tracklet.item[k].poses.count)+first
          if  first<imgi and imgi<=count then
-
-            box = kitti2Dbox(tracklet.item[k].poses.item[imgi-first], tracklet.item[k])
-            box.objectType = tracklet.item[k].objectType
-
             iwidth = rawFrame:size(3)
             iheight = rawFrame:size(2)
 
-            box.x1 = max(1, min(iwidth, box.x1))
-            box.y1 = max(1, min(iheight, box.y1))
-            box.x2 = max(1, min(iwidth, box.x2))
-            box.y2 = max(1, min(iheight, box.y2))
+            if opt.objects then
+               box = kitti2Dbox(tracklet.item[k].poses.item[imgi-first], tracklet.item[k])
+               box.x1 = max(1, min(iwidth, box.x1))
+               box.y1 = max(1, min(iheight, box.y1))
+               box.x2 = max(1, min(iwidth, box.x2))
+               box.y2 = max(1, min(iheight, box.y2))
+               box.objectType = tracklet.item[k].objectType
+            else
+               box = {}
+               box.x1 = math.random(1, iwidth-opt.width)
+               box.y1 = math.random(1, iheight-opt.height)
+               box.x2 = box.x1 + opt.width
+               box.y2 = box.y1 + opt.height
+               box.objectType = 'bg'
+            end
 
             local ldir = opt.datadir ..'/'.. box.objectType
             os.execute("mkdir -p " .. ldir)
@@ -88,7 +96,6 @@ function extractObjects(dspath, tracklet, vfile)
             local centerx = floor(box.x1 + (box.x2-box.x1)/2)
             local centery = floor(box.y1 + (box.y2-box.y1)/2)
 
-
             local x = centerx - floor(opt.width/2)
             local y = centery - floor(opt.height/2)  
           
@@ -96,39 +103,53 @@ function extractObjects(dspath, tracklet, vfile)
             local h = y + opt.height - 1  
  
             if x >= 1 and y >= 1 and w <= iwidth and h <= iheight then
-
                 local sample = rawFrame[{ {}, {y, h}, {x, w} }]:clone()
                 image.saveJPG(ldir ..'/'..vfile..'-'..box.objectType..'-'..  tostring(number)..'.jpg', sample)
             end
-
          end
       end
-   
    end
-
 end
 
 
 -- Main program -------------------------------------------------------------
 
--- some files: 2011_09_26_drive_0014_sync 
--- have problems, so have to split the dataset like this:
--- datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
--- datafiles = {17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
-datafiles = {57,59,60,61,64,79,84,86,87,91,93}
-local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/'
+-- save objects: cars, pedestrians... etc
+if opt.objects then
+   -- some files: 2011_09_26_drive_0014_sync 
+   -- have problems, so have to split the dataset like this:
+   -- datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
+   -- datafiles = {17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
+   datafiles = {57,59,60,61,64,79,84,86,87,91,93}
+   local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/'
 
-for i = 1, #datafiles do
-   local vfile = '2011_09_26_drive_'.. string.format("%04d", datafiles[i]) ..'_sync'
+   for i = 1, #datafiles do
+      local vfile = '2011_09_26_drive_'.. string.format("%04d", datafiles[i]) ..'_sync'
 
-   print('==> loading KITTI tracklets and parsing the XML file: ' .. vfile)
+      print('==> loading KITTI tracklets and parsing the XML file: ' .. vfile)
 
-   local img_path = dspath .. vfile ..  '/image_02/data/'
-   local tracklet_labels = xml.load(dspath .. vfile .. '/tracklet_labels.xml')
-   local tracklet = parseXML(tracklet_labels)
+      local img_path = dspath .. vfile ..  '/image_02/data/'
+      local tracklet_labels = xml.load(dspath .. vfile .. '/tracklet_labels.xml')
+      local tracklet = parseXML(tracklet_labels)
 
-   extractObjects(img_path, tracklet, vfile)
+      extractObjects(img_path, tracklet, vfile)
+   end
+
+else
+   -- save backgrounds (not objects)
+   datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
+   local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/'
+
+   for i = 1, #datafiles do
+      local vfile = '2011_09_26_drive_'.. string.format("%04d", datafiles[i]) ..'_sync'
+
+      print('==> loading KITTI tracklets and parsing the XML file: ' .. vfile)
+
+      local img_path = dspath .. vfile ..  '/image_02/data/'
+      local tracklet_labels = xml.load(dspath .. vfile .. '/tracklet_labels.xml')
+      local tracklet = parseXML(tracklet_labels)
+
+      extractObjects(img_path, tracklet, vfile)
+   end
+
 end
-
-
-
