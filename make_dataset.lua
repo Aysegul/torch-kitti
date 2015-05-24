@@ -73,38 +73,44 @@ function extractObjects(dspath, tracklet, vfile)
             iwidth = rawFrame:size(3)
             iheight = rawFrame:size(2)
 
-            if opt.objects then
+            if tracklet.item[k].poses.item[imgi-first] then 
                box = kitti2Dbox(tracklet.item[k].poses.item[imgi-first], tracklet.item[k])
                box.x1 = max(1, min(iwidth, box.x1))
                box.y1 = max(1, min(iheight, box.y1))
                box.x2 = max(1, min(iwidth, box.x2))
                box.y2 = max(1, min(iheight, box.y2))
-               box.objectType = tracklet.item[k].objectType
-            else
-               box = {}
-               box.x1 = math.random(1, iwidth-opt.width)
-               box.y1 = math.random(1, iheight-opt.height)
-               box.x2 = box.x1 + opt.width
-               box.y2 = box.y1 + opt.height
-               box.objectType = 'bg'
-            end
+               if opt.objects then
+                  box.objectType = tracklet.item[k].objectType
+               else -- if we want bg, we get a sample around (above of) the detection:
 
-            local ldir = opt.datadir ..'/'.. box.objectType
-            os.execute("mkdir -p " .. ldir)
-            local number = #paths.dir(ldir)
+                  -- box.x1 = math.random(1, iwidth-opt.width)
+                  -- box.y1 = math.random(1, iheight-opt.height)
+                  -- box.x2 = box.x1 + opt.width
+                  -- box.y2 = box.y1 + opt.height
+                  box.x1 = box.x1
+                  box.x1 = box.y1 + opt.height
+                  box.x2 = box.x1 + opt.width
+                  box.y2 = box.y1 + opt.height
+                  box.objectType = 'bg'
+               end
 
-            local centerx = floor(box.x1 + (box.x2-box.x1)/2)
-            local centery = floor(box.y1 + (box.y2-box.y1)/2)
+               local ldir = opt.datadir ..'/'.. box.objectType
+               os.execute("mkdir -p " .. ldir)
+               local number = #paths.dir(ldir)
 
-            local x = centerx - floor(opt.width/2)
-            local y = centery - floor(opt.height/2)  
-          
-            local w = x + opt.width - 1
-            local h = y + opt.height - 1  
- 
-            if x >= 1 and y >= 1 and w <= iwidth and h <= iheight then
-                local sample = rawFrame[{ {}, {y, h}, {x, w} }]:clone()
-                image.saveJPG(ldir ..'/'..vfile..'-'..box.objectType..'-'..  tostring(number)..'.jpg', sample)
+               local centerx = floor(box.x1 + (box.x2-box.x1)/2)
+               local centery = floor(box.y1 + (box.y2-box.y1)/2)
+
+               local x = centerx - floor(opt.width/2)
+               local y = centery - floor(opt.height/2)  
+             
+               local w = x + opt.width - 1
+               local h = y + opt.height - 1  
+    
+               if x >= 1 and y >= 1 and w <= iwidth and h <= iheight then
+                   local sample = rawFrame[{ {}, {y, h}, {x, w} }]:clone()
+                   image.saveJPG(ldir ..'/'..vfile..'-'..box.objectType..'-'..  tostring(number)..'.jpg', sample)
+               end
             end
          end
       end
@@ -113,14 +119,9 @@ end
 
 
 -- Main program -------------------------------------------------------------
-
+datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
 -- save objects: cars, pedestrians... etc
 if opt.objects then
-   -- some files: 2011_09_26_drive_0014_sync 
-   -- have problems, so have to split the dataset like this:
-   -- datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
-   -- datafiles = {17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
-   datafiles = {57,59,60,61,64,79,84,86,87,91,93}
    local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/'
 
    for i = 1, #datafiles do
@@ -135,9 +136,8 @@ if opt.objects then
       extractObjects(img_path, tracklet, vfile)
    end
 
-else
+else 
    -- save backgrounds (not objects)
-   datafiles = {1,2,5,9,11,13,14,17,18,19,20,22,23,35,36,39,46,51,56,57,59,60,61,64,79,84,86,87,91,93}
    local dspath = '/Users/eugenioculurciello/Code/datasets/KITTI/'
 
    for i = 1, #datafiles do
